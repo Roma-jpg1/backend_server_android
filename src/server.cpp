@@ -5,6 +5,8 @@
 #include <string.h>
 #include <fstream>     
 #include <ctime>
+#include "nlohmann/json.hpp"
+using json = nlohmann::json;
 using namespace std;
 using namespace zmq;
 
@@ -57,7 +59,38 @@ void run_server(location* loc) {
     }
 }
 
+bool load_data(const string& filename, vector<DataPoint>& out) {
+    ifstream in(filename);
+
+    if (!in.is_open()) {
+        cerr << "Cannot open file: " << filename << endl;
+        return false;
+    }
+
+    json j;
+    in >> j;
+
+    out.clear();
+
+    for (const auto& item : j) {
+        DataPoint p;
+
+        p.lat       = item.value("lat", 0.0f);
+        p.lon       = item.value("lon", 0.0f);
+        p.alt       = item.value("alt", 0.0f);
+        p.accuracy  = item.value("accuracy", 0.0f);
+        p.signalDbm = item.value("signalDbm", -999);
+        p.time      = item.value("time", 0LL);
+
+        out.push_back(p);
+    }
+
+    cout << "Loaded points: " << out.size() << endl;
+    return true;
+}
+
 int main(){
+    load_data("data.json", dataset);
     static location locationInfo{};
     thread gui_thread(run_gui, &locationInfo);
     thread server_thread(run_server, &locationInfo);
