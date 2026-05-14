@@ -16,9 +16,18 @@ find_package(SDL2 REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(ZMQ REQUIRED libzmq)
 
+# ---- PostgreSQL client (libpq) ----
+find_path(LIBPQ_INCLUDE_DIR libpq-fe.h
+    PATHS /usr/include/postgresql /usr/local/include/postgresql
+)
+find_library(LIBPQ_LIBRARY pq
+    PATHS /usr/lib /usr/lib/x86_64-linux-gnu /usr/local/lib
+)
+
 # ---- OpenGL / GLEW ----
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
+find_package(PNG REQUIRED)
 
 # ---- ImGui ----
 add_library(imgui STATIC
@@ -62,6 +71,7 @@ add_executable(main ${SRC_DIR}/main.cpp)
 target_include_directories(main PRIVATE
     ${INCLUDE_DIR}
     ${ZMQ_INCLUDE_DIRS}
+    ${LIBPQ_INCLUDE_DIR}
 )
 
 target_link_libraries(main PRIVATE
@@ -71,7 +81,9 @@ target_link_libraries(main PRIVATE
     ${SDL2_LIBRARIES}
     ${OPENGL_LIBRARIES}
     ${GLEW_LIBRARIES}
+    PNG::PNG
     ${ZMQ_LIBRARIES}
+    ${LIBPQ_LIBRARY}
     pthread
 )
 

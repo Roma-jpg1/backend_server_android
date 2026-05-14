@@ -18,7 +18,7 @@ struct location {
 
 void run_gui(location* loc) {
     while(true){
-        cout << "GUI is running..." << endl;
+        cout << "GUI is running..." << endl; 
         this_thread::sleep_for(chrono::seconds(5));
     }
 }
