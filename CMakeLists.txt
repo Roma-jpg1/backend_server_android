@@ -10,24 +10,36 @@ set(INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
 
 
 # ---- SDL2 ----
-find_package(SDL2 REQUIRED)
+find_package(SDL2 REQUIRED HINTS /opt/homebrew /usr/local)
 
 # ---- ZMQ (libzmq) ----
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(ZMQ REQUIRED libzmq)
+pkg_check_modules(PNG REQUIRED libpng)
+pkg_check_modules(GLEW REQUIRED glew)
+
+find_path(CPPZMQ_INCLUDE_DIR zmq.hpp
+    PATHS /opt/homebrew/include /usr/local/include
+          /opt/homebrew/opt/cppzmq/include
+)
+if(NOT CPPZMQ_INCLUDE_DIR)
+    message(FATAL_ERROR "cppzmq header zmq.hpp not found. Install cppzmq or add its include path.")
+endif()
 
 # ---- PostgreSQL client (libpq) ----
 find_path(LIBPQ_INCLUDE_DIR libpq-fe.h
     PATHS /usr/include/postgresql /usr/local/include/postgresql
+          /opt/homebrew/include /opt/homebrew/include/postgresql@18
+          /opt/homebrew/Cellar/libpq/*/include
 )
 find_library(LIBPQ_LIBRARY pq
     PATHS /usr/lib /usr/lib/x86_64-linux-gnu /usr/local/lib
+          /opt/homebrew/lib /opt/homebrew/opt/libpq/lib
+          /opt/homebrew/Cellar/libpq/*/lib
 )
 
 # ---- OpenGL / GLEW ----
 find_package(OpenGL REQUIRED)
-find_package(GLEW REQUIRED)
-find_package(PNG REQUIRED)
 
 # ---- ImGui ----
 add_library(imgui STATIC
@@ -62,8 +74,11 @@ target_include_directories(implot PUBLIC
 target_link_libraries(implot PRIVATE imgui)
 target_compile_options(implot PRIVATE -fPIC)
 
-add_subdirectory(${THIRD_PARTY_DIR}/json)
-
+if(EXISTS "${THIRD_PARTY_DIR}/json/CMakeLists.txt")
+    add_subdirectory(${THIRD_PARTY_DIR}/json)
+else()
+    find_package(nlohmann_json REQUIRED)
+endif()
 
 # ---- Main executable ----
 add_executable(main ${SRC_DIR}/main.cpp)
@@ -71,7 +86,16 @@ add_executable(main ${SRC_DIR}/main.cpp)
 target_include_directories(main PRIVATE
     ${INCLUDE_DIR}
     ${ZMQ_INCLUDE_DIRS}
+    ${CPPZMQ_INCLUDE_DIR}
+    ${GLEW_INCLUDE_DIRS}
     ${LIBPQ_INCLUDE_DIR}
+    ${PNG_INCLUDE_DIRS}
+)
+
+target_link_directories(main PRIVATE
+    ${PNG_LIBRARY_DIRS}
+    ${ZMQ_LIBRARY_DIRS}
+    ${GLEW_LIBRARY_DIRS}
 )
 
 target_link_libraries(main PRIVATE
@@ -81,10 +105,10 @@ target_link_libraries(main PRIVATE
     ${SDL2_LIBRARIES}
     ${OPENGL_LIBRARIES}
     ${GLEW_LIBRARIES}
-    PNG::PNG
+    ${PNG_LIBRARIES}
     ${ZMQ_LIBRARIES}
     ${LIBPQ_LIBRARY}
     pthread
 )
 
-target_compile_options(main PRIVATE ${ZMQ_CFLAGS_OTHER})
+target_compile_options(main PRIVATE ${ZMQ_CFLAGS_OTHER} ${PNG_CFLAGS_OTHER} ${GLEW_CFLAGS_OTHER})

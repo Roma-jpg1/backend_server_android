@@ -29,3 +29,11 @@ build/
 cmake-build*/
 
 .vscode/
+
+# macOS
+.DS_Store
+
+# Runtime/local app data
+imgui.ini
+locations1.jsonl
+merged_locations.json
